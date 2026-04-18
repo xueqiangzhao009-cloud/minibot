@@ -1,7 +1,7 @@
 # minibot
 
 minibot is an ultra-lightweight personal AI assistant framework inspired by nanobot.
-Delivers core agent functionality with 99% fewer lines of code.
+
 
 ## Features
 
