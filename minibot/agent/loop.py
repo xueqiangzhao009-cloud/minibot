@@ -10,6 +10,16 @@ from minibot.agent.tools.filesystem import ReadFileTool, WriteFileTool, EditFile
 from minibot.agent.tools.shell import ExecTool
 from minibot.agent.tools.web import WebSearchTool, WebFetchTool
 from minibot.agent.tools.message import MessageTool
+from minibot.agent.tools.voice import register_voice_tools
+from minibot.agent.tools.image import register_image_tools
+from minibot.agent.tools.language import register_language_tools
+from minibot.agent.tools.knowledge import register_knowledge_tools
+from minibot.agent.tools.integration import register_integration_tools
+from minibot.agent.tools.development import register_development_tools
+from minibot.agent.tools.personalization import register_personalization_tools
+from minibot.agent.tools.multimodal import register_multimodal_tools
+from minibot.agent.tools.collaboration import register_collaboration_tools
+from minibot.agent.tools.deployment import register_deployment_tools
 from minibot.bus.message import InboundMessage, OutboundMessage
 from minibot.bus.bus import MessageBus
 from minibot.config.schema import AgentDefaults, WebToolsConfig, ExecToolConfig, ToolsConfig
@@ -127,6 +137,18 @@ class AgentLoop:
             )
             self.tools.register(WebFetchTool(proxy=self.web_config.proxy))
         self.tools.register(MessageTool(send_callback=self.bus.publish_outbound))
+        
+        # Register new tools
+        register_voice_tools(self.tools)
+        register_image_tools(self.tools)
+        register_language_tools(self.tools)
+        register_knowledge_tools(self.tools)
+        register_integration_tools(self.tools)
+        register_development_tools(self.tools)
+        register_personalization_tools(self.tools)
+        register_multimodal_tools(self.tools)
+        register_collaboration_tools(self.tools)
+        register_deployment_tools(self.tools)
 
     def _effective_session_key(self, msg: InboundMessage) -> str:
         """Return the session key used for task routing and mid-turn injections."""
