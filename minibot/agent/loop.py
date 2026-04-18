@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import uuid
 from contextlib import nullcontext
 from pathlib import Path
 from typing import Optional, Dict, Any, Callable, Awaitable
@@ -311,6 +312,58 @@ class AgentLoop:
             content=final_content,
             metadata=msg.metadata or {},
         )
+
+    async def run_task(
+        self,
+        task_description: str,
+        session_key: str | None = None,
+    ) -> str:
+        """Run a task directly (for subagent use)."""
+        key = session_key or f"task:{uuid.uuid4().hex[:8]}"
+        session = self.sessions.get_or_create(key)
+
+        session.add_message("user", task_description)
+        self.sessions.save(session)
+
+        history = session.get_history()
+        messages = self.context.build_messages(
+            history=history,
+            current_message=task_description,
+            channel="subagent",
+            chat_id=key,
+        )
+
+        response = await self.provider.generate(messages)
+
+        while response.get("tool_calls"):
+            for tool_call in response["tool_calls"]:
+                tool_name = tool_call["name"]
+                arguments = tool_call.get("arguments", {})
+
+                try:
+                    tool = self.tools.get(tool_name)
+                    if tool:
+                        result = await tool.run(**arguments)
+                        session.add_message("tool", str(result))
+                    else:
+                        session.add_message("tool", f"Error: Tool {tool_name} not found")
+                except Exception as e:
+                    session.add_message("tool", f"Error: {str(e)}")
+
+            history = session.get_history()
+            follow_up_messages = self.context.build_messages(
+                history=history,
+                current_message="",
+                channel="subagent",
+                chat_id=key,
+            )
+            response = await self.provider.generate(follow_up_messages)
+
+        final_content = response.get("content", "")
+        session.add_message("assistant", final_content)
+        self.sessions.save(session)
+
+        return final_content
 
     def stop(self) -> None:
         """Stop the agent loop."""

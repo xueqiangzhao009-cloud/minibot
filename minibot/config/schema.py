@@ -96,6 +96,7 @@ class ChannelsConfig(Base):
     discord: ChannelConfig = ChannelConfig()
     slack: ChannelConfig = ChannelConfig()
     feishu: ChannelConfig = ChannelConfig()
+    webhook: ChannelConfig = ChannelConfig()
 
 
 class HeartbeatConfig(Base):
@@ -127,6 +128,9 @@ class Config(Base):
     providers: Dict[str, ProviderConfig] = Field(default_factory=dict)
     gateway: GatewayConfig = GatewayConfig()
     api: APIConfig = APIConfig()
+    ollama: ProviderConfig = ProviderConfig(
+        api_base="http://localhost:11434"
+    )
 
     @property
     def workspace_path(self) -> Path:
@@ -139,6 +143,8 @@ class Config(Base):
             return "anthropic"
         elif model.startswith("gpt-"):
             return "openai"
+        elif model in ("llama3.2", "llama3", "mistral", "codellama", "qwen2", "phi3", "deepseek"):
+            return "ollama"
         return None
 
     def get_provider(self, model: str) -> Optional[ProviderConfig]:
